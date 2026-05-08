@@ -22,8 +22,7 @@
     },
     "files": [
       "main.cjs",
-      "preload.cjs",
-      "assets/**"
+      "preload.cjs"
     ],
     "extraResources": [
       {
@@ -38,21 +37,19 @@
       },
       {
         "from": "../artifacts/api-server/node_modules",
-        "to": "node_modules",
+        "to": "server-node-modules",
         "filter": ["**/*"]
       }
     ],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ],
-      "icon": "assets/icon.ico"
+      ]
     },
     "mac": {
       "target": [
         { "target": "dmg", "arch": ["x64", "arm64"] }
       ],
-      "icon": "assets/icon.icns",
       "category": "public.app-category.utilities"
     },
     "linux": {
@@ -60,14 +57,11 @@
         { "target": "AppImage", "arch": ["x64"] },
         { "target": "deb", "arch": ["x64"] }
       ],
-      "icon": "assets/icon.png",
       "category": "Utility"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
