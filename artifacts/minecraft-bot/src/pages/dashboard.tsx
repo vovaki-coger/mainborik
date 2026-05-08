@@ -1,4 +1,4 @@
-import { useGetStats, useListBots, useConnectBot, useDisconnectBot } from "@workspace/api-client-react";
+import { useGetStats, useListBots, useConnectBot, useDisconnectBot, getGetStatsQueryKey, getListBotsQueryKey } from "@workspace/api-client-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,8 @@ import { Activity, Power, PowerOff, Settings2, Cpu, Globe, Server } from "lucide
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { data: stats, isLoading: statsLoading } = useGetStats({ query: { refetchInterval: 5000 } });
-  const { data: bots, isLoading: botsLoading } = useListBots({ query: { refetchInterval: 2000 } });
+  const { data: stats, isLoading: statsLoading } = useGetStats({ query: { queryKey: getGetStatsQueryKey(), refetchInterval: 5000 } });
+  const { data: bots, isLoading: botsLoading } = useListBots({ query: { queryKey: getListBotsQueryKey(), refetchInterval: 2000 } });
   
   const connectBot = useConnectBot();
   const disconnectBot = useDisconnectBot();
