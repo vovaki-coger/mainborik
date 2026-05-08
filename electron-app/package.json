@@ -1,0 +1,79 @@
+{
+  "name": "mc-bot-manager",
+  "version": "1.0.0",
+  "description": "Minecraft Bot Manager — AI-powered Minecraft bot control center",
+  "main": "main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -mwl",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.mcbotmanager.app",
+    "productName": "MC Bot Manager",
+    "copyright": "Copyright © 2025",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "assets/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../artifacts/api-server/dist",
+        "to": "server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../artifacts/minecraft-bot/dist/public",
+        "to": "public",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../artifacts/api-server/node_modules",
+        "to": "node_modules",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Utility"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

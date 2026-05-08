@@ -1,0 +1,153 @@
+name: Build Electron App
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            artifact_name: MC-Bot-Manager-Windows
+            artifact_path: electron-app/dist/*.exe
+          - os: macos-latest
+            platform: mac
+            artifact_name: MC-Bot-Manager-macOS
+            artifact_path: electron-app/dist/*.dmg
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: MC-Bot-Manager-Linux
+            artifact_path: |
+              electron-app/dist/*.AppImage
+              electron-app/dist/*.deb
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API server
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Build frontend
+        run: pnpm --filter @workspace/minecraft-bot run build
+        env:
+          BASE_PATH: /
+
+      - name: Install Electron dependencies
+        working-directory: electron-app
+        run: npm install
+
+      - name: Build Electron app (Windows)
+        if: matrix.platform == 'win'
+        working-directory: electron-app
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (macOS)
+        if: matrix.platform == 'mac'
+        working-directory: electron-app
+        run: npm run build:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (Linux)
+        if: matrix.platform == 'linux'
+        working-directory: electron-app
+        run: npm run build:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows installer
+        if: matrix.platform == 'win'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: electron-app/dist/*.exe
+          if-no-files-found: error
+
+      - name: Upload macOS DMG
+        if: matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: electron-app/dist/*.dmg
+          if-no-files-found: error
+
+      - name: Upload Linux packages
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            electron-app/dist/*.AppImage
+            electron-app/dist/*.deb
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/**/*
+          generate_release_notes: true
+          name: "MC Bot Manager ${{ github.ref_name }}"
+          body: |
+            ## MC Bot Manager ${{ github.ref_name }}
+
+            ### Скачать / Download
+
+            | Платформа | Файл |
+            |-----------|------|
+            | Windows | `.exe` установщик |
+            | macOS | `.dmg` образ |
+            | Linux | `.AppImage` / `.deb` |
+
+            ### Требования / Requirements
+            - [Ollama](https://ollama.com) для локального ИИ
+            - Minecraft Java Edition сервер для подключения ботов
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
