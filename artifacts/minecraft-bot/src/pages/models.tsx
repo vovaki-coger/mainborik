@@ -1,5 +1,5 @@
 import { useTranslation } from "@/hooks/useTranslation";
-import { useListModels, useGetOllamaStatus, usePullModel, useDeleteModel } from "@workspace/api-client-react";
+import { useListModels, useGetOllamaStatus, usePullModel, useDeleteModel, getListModelsQueryKey, getGetOllamaStatusQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +12,15 @@ export default function Models() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: models, isLoading: modelsLoading } = useListModels({ query: { refetchInterval: 5000 } });
-  const { data: ollamaStatus } = useGetOllamaStatus({ query: { refetchInterval: 5000 } });
+  const { data: models, isLoading: modelsLoading } = useListModels({ query: { queryKey: getListModelsQueryKey(), refetchInterval: 5000 } });
+  const { data: ollamaStatus } = useGetOllamaStatus({ query: { queryKey: getGetOllamaStatusQueryKey(), refetchInterval: 5000 } });
   
   const pullModel = usePullModel();
   const deleteModel = useDeleteModel();
 
   const handlePull = (name: string) => {
     pullModel.mutate(
-      { data: { name } as any },
+      { name },
       {
         onSuccess: () => {
           toast({ title: t('models.success'), className: "border-primary bg-background" });
@@ -36,7 +36,7 @@ export default function Models() {
   const handleDelete = (name: string) => {
     if (!confirm("Are you sure?")) return;
     deleteModel.mutate(
-      { data: { name } as any },
+      { name },
       {
         onSuccess: () => {
           toast({ title: t('models.success'), className: "border-primary bg-background" });
