@@ -1,10 +1,11 @@
-# [Project name]
+# Minecraft Bot Manager (MC_BOT_MGR)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-stack web application for managing multiple AI-powered Minecraft bots. Features Mineflayer integration for bot control, Ollama/API AI support, real-time monitoring, multi-bot management, and bilingual interface (Russian/English).
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/minecraft-bot run dev` — run the frontend (port 23418)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,31 +15,52 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- API: Express 5 + WebSocket (ws)
 - DB: PostgreSQL + Drizzle ORM
+- Minecraft: Mineflayer
+- AI: Ollama (localhost:11434) + OpenAI API
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- Frontend: React + Vite + TailwindCSS + shadcn/ui + Framer Motion
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- **API spec**: `lib/api-spec/openapi.yaml`
+- **DB schema**: `lib/db/src/schema/` (bots.ts, messages.ts, settings.ts)
+- **API routes**: `artifacts/api-server/src/routes/` (bots, models, chat, settings)
+- **Mineflayer logic**: `artifacts/api-server/src/lib/mineflayer.ts`
+- **Frontend**: `artifacts/minecraft-bot/src/`
+- **i18n**: `artifacts/minecraft-bot/src/i18n/translations.ts`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Mineflayer and ws are externalized from esbuild bundle (too large / native deps)
+- WebSocket server runs on same HTTP server at `/ws` path for real-time bot state
+- Ollama communicates via localhost:11434 — user must have Ollama installed locally
+- Global settings stored as a single row in `global_settings` table
+- Language (RU/EN) is stored in global settings and fetched via API on load
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Dashboard**: View all bots, status counters, quick connect/disconnect
+- **Bot Control Panel**: 3-panel layout — AI settings, live monitoring (HP/hunger/XP/armor/inventory/coords), chat
+- **Model Catalog**: Browse and download Ollama models with RAM/VRAM requirements
+- **Multi-bot**: Create and manage multiple bots, each with own AI/proxy/server settings
+- **Offline AI Chat**: Chat with Ollama/API without connecting to a Minecraft server
+- **Survivor Mode**: Autonomous AI-driven survival gameplay via LLM decisions
+- **Help Page**: Installation guides for Ollama in Russian and English
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Interface is bilingual: Russian (default) and English, switchable via language button
+- No emojis in UI
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After changing OpenAPI spec, always run `pnpm --filter @workspace/api-spec codegen && echo 'export * from "./generated/api";' > lib/api-zod/src/index.ts`
+- Mineflayer must be in esbuild `external` list — do NOT remove it
+- Ollama must be running on localhost:11434 for AI features to work
 
 ## Pointers
 

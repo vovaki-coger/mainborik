@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Minecraft Bot Manager API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: bots
+    description: Bot management
+  - name: models
+    description: Ollama model management
+  - name: chat
+    description: Chat with AI
+  - name: settings
+    description: Global settings
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,351 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /bots:
+    get:
+      operationId: listBots
+      tags: [bots]
+      summary: List all bots
+      responses:
+        "200":
+          description: List of bots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bot"
+    post:
+      operationId: createBot
+      tags: [bots]
+      summary: Create a new bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBotBody"
+      responses:
+        "201":
+          description: Bot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bot"
+
+  /bots/{id}:
+    get:
+      operationId: getBot
+      tags: [bots]
+      summary: Get a bot by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Bot found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bot"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateBot
+      tags: [bots]
+      summary: Update a bot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBotBody"
+      responses:
+        "200":
+          description: Bot updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bot"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteBot
+      tags: [bots]
+      summary: Delete a bot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /bots/{id}/connect:
+    post:
+      operationId: connectBot
+      tags: [bots]
+      summary: Connect bot to a Minecraft server
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Connection initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bots/{id}/disconnect:
+    post:
+      operationId: disconnectBot
+      tags: [bots]
+      summary: Disconnect bot from server
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+
+  /bots/{id}/action:
+    post:
+      operationId: botAction
+      tags: [bots]
+      summary: Send an action command to the bot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BotActionBody"
+      responses:
+        "200":
+          description: Action performed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+
+  /bots/{id}/messages:
+    get:
+      operationId: getBotMessages
+      tags: [bots]
+      summary: Get chat history for a bot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendBotMessage
+      tags: [bots]
+      summary: Send a message via bot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "200":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+
+  /models:
+    get:
+      operationId: listModels
+      tags: [models]
+      summary: List available Ollama models
+      responses:
+        "200":
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OllamaModel"
+
+  /models/{name}/pull:
+    post:
+      operationId: pullModel
+      tags: [models]
+      summary: Download/pull an Ollama model
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pull started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+
+  /models/{name}:
+    delete:
+      operationId: deleteModel
+      tags: [models]
+      summary: Delete an Ollama model
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotActionResponse"
+
+  /models/ollama-status:
+    get:
+      operationId: getOllamaStatus
+      tags: [models]
+      summary: Check if Ollama is running
+      responses:
+        "200":
+          description: Ollama status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OllamaStatus"
+
+  /chat/offline:
+    post:
+      operationId: chatOffline
+      tags: [chat]
+      summary: Chat with AI offline (without bot connected to server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfflineChatBody"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfflineChatResponse"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get global settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalSettings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update global settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalSettings"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [bots]
+      summary: Get aggregate stats across all bots
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +386,339 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    BotStatus:
+      type: string
+      enum: [offline, connecting, online, autonomous, error]
+
+    BotAiMode:
+      type: string
+      enum: [ollama, api, disabled]
+
+    Bot:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        serverHost:
+          type: string
+        serverPort:
+          type: integer
+        version:
+          type: string
+        status:
+          $ref: "#/components/schemas/BotStatus"
+        hp:
+          type: ["number", "null"]
+        hunger:
+          type: ["number", "null"]
+        xp:
+          type: ["number", "null"]
+        armor:
+          type: ["number", "null"]
+        posX:
+          type: ["number", "null"]
+        posY:
+          type: ["number", "null"]
+        posZ:
+          type: ["number", "null"]
+        biome:
+          type: ["string", "null"]
+        inventory:
+          type: ["string", "null"]
+        aiMode:
+          $ref: "#/components/schemas/BotAiMode"
+        modelName:
+          type: ["string", "null"]
+        apiKey:
+          type: ["string", "null"]
+        systemPrompt:
+          type: ["string", "null"]
+        autoReply:
+          type: boolean
+        autoLogin:
+          type: boolean
+        proxyHost:
+          type: ["string", "null"]
+        proxyPort:
+          type: ["integer", "null"]
+        proxyType:
+          type: ["string", "null"]
+        proxyUser:
+          type: ["string", "null"]
+        useAi:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - serverHost
+        - serverPort
+        - version
+        - status
+        - aiMode
+        - autoReply
+        - autoLogin
+        - useAi
+        - createdAt
+        - updatedAt
+
+    CreateBotBody:
+      type: object
+      properties:
+        name:
+          type: string
+        serverHost:
+          type: string
+        serverPort:
+          type: integer
+        version:
+          type: string
+        aiMode:
+          $ref: "#/components/schemas/BotAiMode"
+        modelName:
+          type: ["string", "null"]
+        apiKey:
+          type: ["string", "null"]
+        systemPrompt:
+          type: ["string", "null"]
+        autoReply:
+          type: boolean
+        autoLogin:
+          type: boolean
+        proxyHost:
+          type: ["string", "null"]
+        proxyPort:
+          type: ["integer", "null"]
+        proxyType:
+          type: ["string", "null"]
+        proxyUser:
+          type: ["string", "null"]
+        useAi:
+          type: boolean
+      required:
+        - name
+        - serverHost
+        - serverPort
+
+    UpdateBotBody:
+      type: object
+      properties:
+        name:
+          type: string
+        serverHost:
+          type: string
+        serverPort:
+          type: integer
+        version:
+          type: string
+        aiMode:
+          $ref: "#/components/schemas/BotAiMode"
+        modelName:
+          type: ["string", "null"]
+        apiKey:
+          type: ["string", "null"]
+        systemPrompt:
+          type: ["string", "null"]
+        autoReply:
+          type: boolean
+        autoLogin:
+          type: boolean
+        proxyHost:
+          type: ["string", "null"]
+        proxyPort:
+          type: ["integer", "null"]
+        proxyType:
+          type: ["string", "null"]
+        proxyUser:
+          type: ["string", "null"]
+        useAi:
+          type: boolean
+
+    BotActionBody:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [stop, stop_movement, survivor_mode, rename]
+        value:
+          type: ["string", "null"]
+      required:
+        - action
+
+    BotActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    ChatMessageType:
+      type: string
+      enum: [chat, system, ai, bot]
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        botId:
+          type: integer
+        content:
+          type: string
+        sender:
+          type: string
+        type:
+          $ref: "#/components/schemas/ChatMessageType"
+        createdAt:
+          type: string
+      required:
+        - id
+        - botId
+        - content
+        - sender
+        - type
+        - createdAt
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        useAi:
+          type: boolean
+      required:
+        - content
+
+    OllamaModelStatus:
+      type: string
+      enum: [available, not_downloaded, downloading]
+
+    OllamaModel:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        status:
+          $ref: "#/components/schemas/OllamaModelStatus"
+        size:
+          type: ["string", "null"]
+        ramRequired:
+          type: ["string", "null"]
+        vramRequired:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+      required:
+        - name
+        - displayName
+        - status
+
+    OllamaStatus:
+      type: object
+      properties:
+        running:
+          type: boolean
+        version:
+          type: ["string", "null"]
+        url:
+          type: string
+      required:
+        - running
+        - url
+
+    OfflineChatBody:
+      type: object
+      properties:
+        message:
+          type: string
+        modelName:
+          type: string
+        systemPrompt:
+          type: ["string", "null"]
+        apiKey:
+          type: ["string", "null"]
+        aiMode:
+          $ref: "#/components/schemas/BotAiMode"
+      required:
+        - message
+        - modelName
+
+    OfflineChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        model:
+          type: string
+      required:
+        - response
+        - model
+
+    GlobalSettings:
+      type: object
+      properties:
+        globalPassword:
+          type: ["string", "null"]
+        defaultProxy:
+          type: ["string", "null"]
+        defaultAiMode:
+          $ref: "#/components/schemas/BotAiMode"
+        defaultModelName:
+          type: ["string", "null"]
+        language:
+          type: string
+          enum: [ru, en]
+      required:
+        - defaultAiMode
+        - language
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        globalPassword:
+          type: ["string", "null"]
+        defaultProxy:
+          type: ["string", "null"]
+        defaultAiMode:
+          $ref: "#/components/schemas/BotAiMode"
+        defaultModelName:
+          type: ["string", "null"]
+        language:
+          type: string
+          enum: [ru, en]
+
+    DashboardStats:
+      type: object
+      properties:
+        totalBots:
+          type: integer
+        onlineBots:
+          type: integer
+        autonomousBots:
+          type: integer
+        botsWithAi:
+          type: integer
+      required:
+        - totalBots
+        - onlineBots
+        - autonomousBots
+        - botsWithAi
