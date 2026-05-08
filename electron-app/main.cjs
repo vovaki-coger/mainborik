@@ -14,16 +14,17 @@ function getServerPath() {
   return path.join(__dirname, "..", "artifacts", "api-server", "dist", "index.mjs");
 }
 
-function getFrontendPath() {
+function getNodeModulesPath() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, "public");
+    return path.join(process.resourcesPath, "server-node-modules");
   }
-  return path.join(__dirname, "..", "artifacts", "minecraft-bot", "dist", "public");
+  return path.join(__dirname, "..", "artifacts", "api-server", "node_modules");
 }
 
 function startServer() {
   return new Promise((resolve, reject) => {
     const serverPath = getServerPath();
+    const nodeModulesPath = getNodeModulesPath();
 
     serverProcess = spawn(process.execPath, [serverPath], {
       env: {
@@ -31,7 +32,8 @@ function startServer() {
         PORT: String(SERVER_PORT),
         BASE_PATH: "/",
         NODE_ENV: "production",
-        DATABASE_URL: process.env.DATABASE_URL || `sqlite:${path.join(app.getPath("userData"), "minecraft-bot.db")}`,
+        NODE_PATH: nodeModulesPath,
+        DATABASE_URL: process.env.DATABASE_URL || "",
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -85,17 +87,15 @@ function createWindow() {
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     frame: true,
     show: false,
-    icon: path.join(__dirname, "assets", "icon.png"),
   });
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
 
-  // In packaged mode serve frontend from the server
   mainWindow.loadURL(`http://localhost:${SERVER_PORT}/`);
 
-  // Open external links in default browser, not in Electron window
+  // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
