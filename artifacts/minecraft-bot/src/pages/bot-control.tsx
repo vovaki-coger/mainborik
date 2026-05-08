@@ -7,7 +7,7 @@ import {
   useConnectBot, 
   useDisconnectBot,
   useBotAction,
-  useGetBotMessages,
+  useGetBotMessages, getGetBotMessagesQueryKey,
   useSendBotMessage,
   useChatOffline,
   useListModels
@@ -33,11 +33,11 @@ export default function BotControl() {
   const queryClient = useQueryClient();
 
   const { data: bot, isLoading: botLoading } = useGetBot(botId, { 
-    query: { enabled: !!botId, refetchInterval: 2000 } 
+    query: { queryKey: getGetBotQueryKey(botId), enabled: !!botId, refetchInterval: 2000 } 
   });
   
   const { data: messages } = useGetBotMessages(botId, { limit: 50 }, { 
-    query: { enabled: !!botId, refetchInterval: 3000 } 
+    query: { queryKey: getGetBotMessagesQueryKey(botId, { limit: 50 }), enabled: !!botId, refetchInterval: 3000 } 
   });
 
   const { data: models } = useListModels();
@@ -86,7 +86,7 @@ export default function BotControl() {
     if (!chatInput.trim()) return;
 
     if (bot?.status === 'online' || bot?.status === 'autonomous') {
-      sendMsg.mutate({ data: { content: chatInput, useAi: bot.useAi } });
+      sendMsg.mutate({ id: botId, data: { content: chatInput, useAi: bot.useAi } });
     } else {
       // Offline chat mode
       offlineChat.mutate(
