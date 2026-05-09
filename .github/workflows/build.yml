@@ -77,8 +77,9 @@ jobs:
       - name: Run codegen
         shell: bash
         run: |
-          pnpm --filter @workspace/api-spec run codegen
+          pnpm --filter @workspace/api-spec exec orval --config ./orval.config.ts
           echo 'export * from "./generated/api";' > lib/api-zod/src/index.ts
+          pnpm run typecheck:libs
 
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
