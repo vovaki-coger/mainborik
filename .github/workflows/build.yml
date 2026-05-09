@@ -85,19 +85,33 @@ jobs:
           fi
 
           # Install lightningcss native .node file (used by @tailwindcss/vite)
-          # lightningcss requires '../lightningcss.<platform>.node' relative to its own package dir
+          # lightningcss requires the .node file inside its own package directory
           if [ -n "$CSS_SUFFIX" ]; then
-            CSS_PKG="lightningcss-$CSS_SUFFIX"
             CSS_NODE="lightningcss.$CSS_SUFFIX.node"
+            # Match the exact version of lightningcss that is installed
+            LIGHTNINGCSS_VER=$(node -e "try{console.log(require('$GITHUB_WORKSPACE/node_modules/lightningcss/package.json').version)}catch(e){try{const fs=require('fs');const g=require('path').join('$GITHUB_WORKSPACE','node_modules','.pnpm');const d=fs.readdirSync(g).find(x=>x.startsWith('lightningcss@'))||'';const m=d.match(/lightningcss@([^_]+)/);console.log(m?m[1]:'1.32.0')}catch(e2){console.log('1.32.0')}}" 2>/dev/null || echo "1.32.0")
+            CSS_PKG="lightningcss-${CSS_SUFFIX}@${LIGHTNINGCSS_VER}"
             echo "Installing $CSS_PKG"
             npm install --prefix "$TMPDIR_PKG" --no-save "$CSS_PKG"
-            # Find lightningcss package dir in pnpm store
-            LIGHTNINGCSS_PKG=$(find "$GITHUB_WORKSPACE/node_modules" -name "package.json" -path "*/lightningcss/package.json" | head -1 | xargs dirname 2>/dev/null)
+            # Find lightningcss package dir using Node.js (works on Windows and Unix)
+            LIGHTNINGCSS_PKG=$(node -e "
+              try {
+                const p = require.resolve('lightningcss/package.json');
+                console.log(require('path').dirname(p));
+              } catch(e) {
+                const fs = require('fs'), path = require('path');
+                const pnpm = path.join('$GITHUB_WORKSPACE', 'node_modules', '.pnpm');
+                const dirs = fs.readdirSync(pnpm).filter(d => d.startsWith('lightningcss@'));
+                if (dirs.length) {
+                  console.log(path.join(pnpm, dirs[0], 'node_modules', 'lightningcss'));
+                }
+              }
+            " 2>/dev/null)
             if [ -n "$LIGHTNINGCSS_PKG" ]; then
-              cp "$TMPDIR_PKG/node_modules/$CSS_PKG/$CSS_NODE" "$LIGHTNINGCSS_PKG/"
+              cp "$TMPDIR_PKG/node_modules/lightningcss-$CSS_SUFFIX/$CSS_NODE" "$LIGHTNINGCSS_PKG/"
               echo "Copied $CSS_NODE to $LIGHTNINGCSS_PKG"
             else
-              echo "Warning: lightningcss package dir not found, skipping"
+              echo "Warning: lightningcss package dir not found"
             fi
           fi
 
