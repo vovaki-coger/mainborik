@@ -59,7 +59,7 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install platform-specific rollup native module
+      - name: Install platform-specific native modules
         shell: bash
         run: |
           PLAT_ARCH="${{ runner.os }}-$(node -e 'console.log(process.arch)')"
@@ -68,19 +68,37 @@ jobs:
           echo '{"name":"tmp","version":"1.0.0"}' > "$TMPDIR_PKG/package.json"
 
           case "$PLAT_ARCH" in
-            Linux-x64)   ROLLUP_PKG="@rollup/rollup-linux-x64-gnu" ;;
-            macOS-arm64) ROLLUP_PKG="@rollup/rollup-darwin-arm64" ;;
-            macOS-x64)   ROLLUP_PKG="@rollup/rollup-darwin-x64" ;;
-            Windows-x64) ROLLUP_PKG="@rollup/rollup-win32-x64-msvc" ;;
+            Linux-x64)   ROLLUP_PKG="@rollup/rollup-linux-x64-gnu";  CSS_SUFFIX="linux-x64-gnu" ;;
+            macOS-arm64) ROLLUP_PKG="@rollup/rollup-darwin-arm64";    CSS_SUFFIX="darwin-arm64" ;;
+            macOS-x64)   ROLLUP_PKG="@rollup/rollup-darwin-x64";      CSS_SUFFIX="darwin-x64" ;;
+            Windows-x64) ROLLUP_PKG="@rollup/rollup-win32-x64-msvc"; CSS_SUFFIX="win32-x64-msvc" ;;
           esac
 
+          # Install rollup native module
           if [ -n "$ROLLUP_PKG" ]; then
             echo "Installing $ROLLUP_PKG"
             npm install --prefix "$TMPDIR_PKG" --no-save "$ROLLUP_PKG"
             ROLLUP_DIR=$(echo "$ROLLUP_PKG" | cut -d'/' -f2)
             mkdir -p "$GITHUB_WORKSPACE/node_modules/@rollup"
             cp -r "$TMPDIR_PKG/node_modules/@rollup/$ROLLUP_DIR" "$GITHUB_WORKSPACE/node_modules/@rollup/" || true
-            echo "Installed $ROLLUP_PKG successfully"
+            echo "Installed $ROLLUP_PKG"
+          fi
+
+          # Install lightningcss native .node file (used by @tailwindcss/vite)
+          # lightningcss requires '../lightningcss.<platform>.node' relative to its own package dir
+          if [ -n "$CSS_SUFFIX" ]; then
+            CSS_PKG="lightningcss-$CSS_SUFFIX"
+            CSS_NODE="lightningcss.$CSS_SUFFIX.node"
+            echo "Installing $CSS_PKG"
+            npm install --prefix "$TMPDIR_PKG" --no-save "$CSS_PKG"
+            # Find lightningcss package dir in pnpm store
+            LIGHTNINGCSS_PKG=$(find "$GITHUB_WORKSPACE/node_modules" -name "package.json" -path "*/lightningcss/package.json" | head -1 | xargs dirname 2>/dev/null)
+            if [ -n "$LIGHTNINGCSS_PKG" ]; then
+              cp "$TMPDIR_PKG/node_modules/$CSS_PKG/$CSS_NODE" "$LIGHTNINGCSS_PKG/"
+              echo "Copied $CSS_NODE to $LIGHTNINGCSS_PKG"
+            else
+              echo "Warning: lightningcss package dir not found, skipping"
+            fi
           fi
 
       - name: Run codegen
