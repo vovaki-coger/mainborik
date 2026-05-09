@@ -4,6 +4,10 @@
   "description": "Minecraft Bot Manager — AI-powered Minecraft bot control center",
   "main": "main.cjs",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vovaki-coger/mainborik"
+  },
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win",
