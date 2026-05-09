@@ -4,6 +4,10 @@
   "description": "Minecraft Bot Manager — AI-powered Minecraft bot control center",
   "main": "main.cjs",
   "private": true,
+  "author": {
+    "name": "MC Bot Manager",
+    "email": "noreply@mcbotmanager.local"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/vovaki-coger/mainborik"
