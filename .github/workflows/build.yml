@@ -62,20 +62,16 @@ jobs:
       - name: Install platform-specific rollup native module
         shell: bash
         run: |
-          PKG=$(node -e "
-            const plat = process.platform;
-            const arch = process.arch;
-            const map = {
-              'linux-x64':   '@rollup/rollup-linux-x64-gnu',
-              'darwin-x64':  '@rollup/rollup-darwin-x64',
-              'darwin-arm64':'@rollup/rollup-darwin-arm64',
-              'win32-x64':   '@rollup/rollup-win32-x64-msvc',
-            };
-            console.log(map[plat+'-'+arch] || '');
-          ")
+          PKG=$(node -e "const m={'linux-x64':'@rollup/rollup-linux-x64-gnu','darwin-x64':'@rollup/rollup-darwin-x64','darwin-arm64':'@rollup/rollup-darwin-arm64','win32-x64':'@rollup/rollup-win32-x64-msvc'};console.log(m[process.platform+'-'+process.arch]||'')")
           if [ -n "$PKG" ]; then
             echo "Installing $PKG for rollup native support"
-            npm install --no-save "$PKG"
+            TMPDIR_PKG=$(mktemp -d)
+            echo '{"name":"tmp","version":"1.0.0"}' > "$TMPDIR_PKG/package.json"
+            npm install --prefix "$TMPDIR_PKG" --no-save "$PKG"
+            PKG_DIR=$(echo "$PKG" | cut -d'/' -f2)
+            mkdir -p "$GITHUB_WORKSPACE/node_modules/@rollup"
+            cp -r "$TMPDIR_PKG/node_modules/@rollup/$PKG_DIR" "$GITHUB_WORKSPACE/node_modules/@rollup/" || true
+            echo "Installed $PKG successfully"
           fi
 
       - name: Run codegen
