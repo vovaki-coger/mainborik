@@ -38,18 +38,6 @@ jobs:
         with:
           version: 10
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
       - name: Install Linux system dependencies
         if: matrix.platform == 'linux'
         run: |
@@ -70,6 +58,31 @@ jobs:
 
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Install platform-specific rollup native module
+        shell: bash
+        run: |
+          PKG=$(node -e "
+            const plat = process.platform;
+            const arch = process.arch;
+            const map = {
+              'linux-x64':   '@rollup/rollup-linux-x64-gnu',
+              'darwin-x64':  '@rollup/rollup-darwin-x64',
+              'darwin-arm64':'@rollup/rollup-darwin-arm64',
+              'win32-x64':   '@rollup/rollup-win32-x64-msvc',
+            };
+            console.log(map[plat+'-'+arch] || '');
+          ")
+          if [ -n "$PKG" ]; then
+            echo "Installing $PKG for rollup native support"
+            npm install --no-save "$PKG"
+          fi
+
+      - name: Run codegen
+        shell: bash
+        run: |
+          pnpm --filter @workspace/api-spec run codegen
+          echo 'export * from "./generated/api";' > lib/api-zod/src/index.ts
 
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
